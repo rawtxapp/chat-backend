@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"github.com/roasbeef/btcutil"
+	"golang.org/x/crypto/acme/autocert"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	macaroon "gopkg.in/macaroon.v2"
@@ -137,11 +139,13 @@ func main() {
 	rpcMacaroonFlag := flag.String("macaroon", defaultMacaroonPath, " path for the macaroon.")
 	rpcServerFlag := flag.String("rpcServer", defaultRPCServer, "rpc server to connect to.")
 	listenPortFlag := flag.Int("port", defaultPort, "port on which to listen for connections.")
+	httpsEnableFlag := flag.Bool("https", false, "enables https using autocert/letsencrypt.")
 	flag.Parse()
 	tlsCert = *tlsCertFlag
 	rpcMacaroon = *rpcMacaroonFlag
 	rpcServer = *rpcServerFlag
 	listenPort = *listenPortFlag
+	httpsEnabled := *httpsEnableFlag
 
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
@@ -164,7 +168,27 @@ func main() {
 		fatal(err)
 	}
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", listenPort), api.MakeHandler()))
+
+	if httpsEnabled {
+		certManager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist("rawtx.com"),
+			Cache:      autocert.DirCache("certs"),
+		}
+
+		server := &http.Server{
+			Addr: ":https",
+			TLSConfig: &tls.Config{
+				GetCertificate: certManager.GetCertificate,
+			},
+			Handler: api.MakeHandler(),
+		}
+
+		go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
+		log.Fatal(server.ListenAndServeTLS("", ""))
+	} else {
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", listenPort), api.MakeHandler()))
+	}
 }
 
 // cleanAndExpandPath expands environment variables and leading ~ in the
