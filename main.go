@@ -172,8 +172,8 @@ func main() {
 	if httpsEnabled {
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist("rawtx.com"),
-			Cache:      autocert.DirCache("certs"),
+			HostPolicy: autocert.HostWhitelist("chat-backend.rawtx.com"),
+			Cache:      autocert.DirCache(filepath.Join(cleanAndExpandPath("~"), "certs")),
 		}
 
 		server := &http.Server{
