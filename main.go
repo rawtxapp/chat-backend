@@ -30,11 +30,13 @@ var (
 	rpcMacaroon string
 	rpcServer   = defaultRPCServer
 	lndDir      = defaultLndDir
+	listenPort  = defaultPort
 
 	defaultLndDir       = btcutil.AppDataDir("lnd", false)
 	defaultTLSCertPath  = filepath.Join(defaultLndDir, defaultTLSCertFilename)
 	defaultMacaroonPath = filepath.Join(defaultLndDir, defaultMacaroonFilename)
 	defaultRPCServer    = "localhost:10009"
+	defaultPort         = 8080
 )
 
 func fatal(err error) {
@@ -131,10 +133,15 @@ func getClientConn() *grpc.ClientConn {
 }
 
 func main() {
-	tlsCert = *flag.String("tlsCert", defaultTLSCertPath, "path for the certificate used by the lnd server.")
-	rpcMacaroon = *flag.String("macaroon", defaultMacaroonPath, " path for the macaroon.")
-	rpcServer = *flag.String("rpcServer", defaultRPCServer, "rpc server to connect to.")
+	tlsCertFlag := flag.String("tlsCert", defaultTLSCertPath, "path for the certificate used by the lnd server.")
+	rpcMacaroonFlag := flag.String("macaroon", defaultMacaroonPath, " path for the macaroon.")
+	rpcServerFlag := flag.String("rpcServer", defaultRPCServer, "rpc server to connect to.")
+	listenPortFlag := flag.Int("port", defaultPort, "port on which to listen for connections.")
 	flag.Parse()
+	tlsCert = *tlsCertFlag
+	rpcMacaroon = *rpcMacaroonFlag
+	rpcServer = *rpcServerFlag
+	listenPort = *listenPortFlag
 
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
@@ -157,7 +164,7 @@ func main() {
 		fatal(err)
 	}
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":8080", api.MakeHandler()))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", listenPort), api.MakeHandler()))
 }
 
 // cleanAndExpandPath expands environment variables and leading ~ in the
