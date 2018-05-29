@@ -21,3 +21,15 @@ func getInvoice(w rest.ResponseWriter, r *rest.Request) {
 	}
 	w.WriteJson(map[string]string{"pay_req": res.PaymentRequest})
 }
+
+func getPubkey(w rest.ResponseWriter, r *rest.Request) {
+	c, clean := getClient()
+	defer clean()
+
+	res, err := c.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		w.WriteJson(map[string]string{"error": err.Error()})
+		return
+	}
+	w.WriteJson(map[string]string{"pubkey": res.GetIdentityPubkey()})
+}

@@ -15,7 +15,6 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"github.com/roasbeef/btcutil"
-	"golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	macaroon "gopkg.in/macaroon.v2"
@@ -137,14 +136,6 @@ func main() {
 	rpcServer = *flag.String("rpcServer", defaultRPCServer, "rpc server to connect to.")
 	flag.Parse()
 
-	c, cleanUp := getClient()
-	defer cleanUp()
-	res, err := c.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		fatal(err)
-	}
-	fmt.Println(res)
-
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	api.Use(&rest.CorsMiddleware{
@@ -159,6 +150,7 @@ func main() {
 		AccessControlMaxAge:           3600,
 	})
 	router, err := rest.MakeRouter(
+		rest.Get("/pubkey", getPubkey),
 		rest.Get("/invoice/:memo", getInvoice),
 	)
 	if err != nil {
