@@ -31,5 +31,9 @@ func getPubkey(w rest.ResponseWriter, r *rest.Request) {
 		w.WriteJson(map[string]string{"error": err.Error()})
 		return
 	}
-	w.WriteJson(map[string]string{"pubkey": res.GetIdentityPubkey()})
+	j := map[string]string{"pubkey": res.GetIdentityPubkey()}
+	if len(res.GetUris()) > 0 {
+		j["uri"] = res.GetUris()[0]
+	}
+	w.WriteJson(j)
 }
