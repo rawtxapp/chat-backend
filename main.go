@@ -22,7 +22,7 @@ import (
 
 const (
 	defaultTLSCertFilename  = "tls.cert"
-	defaultMacaroonFilename = "invoice.macaroon"
+	defaultMacaroonFilename = "admin.macaroon"
 )
 
 var (
