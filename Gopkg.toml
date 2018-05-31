@@ -29,13 +29,17 @@
   go-tests = true
   unused-packages = true
 
-[[constraint]]
+[[override]]
   name = "google.golang.org/grpc"
-  revision = "b3ddf786825de56a4178401b7e174ee332173b66"
+  version = "^1.12"
+
+[[override]]
+  name = "github.com/golang/protobuf"
+  version = "1.1.0"
 
 [[constraint]]
   name = "github.com/lightningnetwork/lnd"
-  version = "0.4.1-beta"
+  version = "0.4.2-beta"
 
 [[constraint]]
   name = "github.com/ant0ine/go-json-rest"

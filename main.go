@@ -12,14 +12,19 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cloud.google.com/go/firestore"
+	firebase "firebase.google.com/go"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"github.com/roasbeef/btcutil"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	macaroon "gopkg.in/macaroon.v2"
+
+	"google.golang.org/api/option"
 )
 
 const (
@@ -33,6 +38,8 @@ var (
 	rpcServer   = defaultRPCServer
 	lndDir      = defaultLndDir
 	listenPort  = defaultPort
+	firebaseApp *firebase.App
+	firebaseDb  *firestore.Client
 
 	defaultLndDir       = btcutil.AppDataDir("lnd", false)
 	defaultTLSCertPath  = filepath.Join(defaultLndDir, defaultTLSCertFilename)
@@ -140,12 +147,26 @@ func main() {
 	rpcServerFlag := flag.String("rpcServer", defaultRPCServer, "rpc server to connect to.")
 	listenPortFlag := flag.Int("port", defaultPort, "port on which to listen for connections.")
 	httpsEnableFlag := flag.Bool("https", false, "enables https using autocert/letsencrypt.")
+	firebaseCredsFlag := flag.String("firebaseCreds", "~/firebase.json", "serviceAccountKey.json for firebase.")
 	flag.Parse()
 	tlsCert = *tlsCertFlag
 	rpcMacaroon = *rpcMacaroonFlag
 	rpcServer = *rpcServerFlag
 	listenPort = *listenPortFlag
 	httpsEnabled := *httpsEnableFlag
+	firebaseCredsFile := cleanAndExpandPath(*firebaseCredsFlag)
+	opt := option.WithCredentialsFile(firebaseCredsFile)
+	app, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		fatal(err)
+	}
+	firebaseApp = app
+	firebaseDb, err = firebaseApp.Firestore(context.Background())
+	if err != nil {
+		fatal(err)
+	}
+
+	watchPayments()
 
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
