@@ -16,7 +16,9 @@ type Message struct {
 }
 
 func watchPayments() {
-	ticker := time.NewTicker(3 * time.Second)
+	//TODO: A better way is to watch for payments and then
+	// update firebase.
+	ticker := time.NewTicker(15 * time.Second)
 	go func() {
 		for {
 			select {
