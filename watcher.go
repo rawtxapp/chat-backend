@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
-	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -15,19 +15,19 @@ type Message struct {
 	Settled bool   `json:"settled,omitempty"`
 }
 
-func watchPayments() {
-	//TODO: A better way is to watch for payments and then
-	// update firebase.
-	ticker := time.NewTicker(15 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				checkPayments()
-			}
-		}
-	}()
-}
+// func watchPayments() {
+// 	//TODO: A better way is to watch for payments and then
+// 	// update firebase.
+// 	ticker := time.NewTicker(15 * time.Second)
+// 	go func() {
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				checkPayments()
+// 			}
+// 		}
+// 	}()
+// }
 
 func checkPayments() {
 	c, clean := getClient()
@@ -64,5 +64,39 @@ func checkPayments() {
 			}
 		}
 
+	}
+}
+
+func watchInvoices() {
+	c, clean := getClient()
+	defer clean()
+
+	sub, err := c.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	for {
+		invoice, err := sub.Recv()
+		if err == io.EOF {
+			sub.CloseSend()
+		}
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if invoice.GetSettled() {
+			fmt.Println("Received ", invoice.GetPaymentRequest())
+			it := firebaseDb.Collection("messages").Where("invoice", "==", invoice.GetPaymentRequest()).Limit(1).Documents(context.Background())
+			snapshot, err := it.GetAll()
+			if err != nil {
+				fmt.Println("Couldn't find invoice in firebase")
+				continue
+			}
+			for _, s := range snapshot {
+				s.Ref.Update(context.Background(), []firestore.Update{{Path: "settled", Value: true}})
+			}
+		}
 	}
 }

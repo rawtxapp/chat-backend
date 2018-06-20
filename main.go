@@ -166,7 +166,11 @@ func main() {
 		fatal(err)
 	}
 
-	watchPayments()
+	// On initial startup check payments for all unsettled messages
+	// just in case the subscribe invoices failed (if server was down
+	// while an invoice got settled for example).
+	checkPayments()
+	watchInvoices()
 
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
