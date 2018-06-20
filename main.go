@@ -189,7 +189,7 @@ func main() {
 		fatal(err)
 	}
 	api.SetApp(router)
-
+	port := fmt.Sprintf(":%v", listenPort)
 	if httpsEnabled {
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
@@ -198,7 +198,7 @@ func main() {
 		}
 
 		server := &http.Server{
-			Addr: ":https",
+			Addr: port,
 			TLSConfig: &tls.Config{
 				GetCertificate: certManager.GetCertificate,
 			},
@@ -208,7 +208,7 @@ func main() {
 		go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
 		log.Fatal(server.ListenAndServeTLS("", ""))
 	} else {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", listenPort), api.MakeHandler()))
+		log.Fatal(http.ListenAndServe(port, api.MakeHandler()))
 	}
 }
 
