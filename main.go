@@ -170,7 +170,7 @@ func main() {
 	// just in case the subscribe invoices failed (if server was down
 	// while an invoice got settled for example).
 	checkPayments()
-	watchInvoices()
+	go watchInvoices()
 
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
@@ -194,6 +194,7 @@ func main() {
 	}
 	api.SetApp(router)
 	port := fmt.Sprintf(":%v", listenPort)
+	fmt.Println("Opening on port ", port)
 	if httpsEnabled {
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
