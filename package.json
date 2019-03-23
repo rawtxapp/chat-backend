@@ -1,0 +1,28 @@
+{
+  "name": "chat-backend",
+  "version": "0.0.1",
+  "description": "rawtx chat backend.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rawtxapp/chat-backend.git"
+  },
+  "keywords": [
+    "chat",
+    "realtime",
+    "lightning",
+    "rawtx"
+  ],
+  "author": "F",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rawtxapp/chat-backend/issues"
+  },
+  "homepage": "https://github.com/rawtxapp/chat-backend#readme",
+  "devDependencies": {
+    "typescript": "^3.3.4000"
+  }
+}
