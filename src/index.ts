@@ -1,12 +1,20 @@
 import express from 'express';
+import http from 'http';
+import socketio from 'socket.io';
 
 // Create a new express application instance
 const app: express.Application = express();
+const httpServer = new http.Server(app);
+const io = socketio(httpServer);
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
 });
 
-app.listen(3001, function () {
-  console.log('Example app listening on port 3001!');
+io.on('connection', function(socket) {
+  console.log('a user connected');
+});
+
+httpServer.listen(3001, function () {
+  console.log('Listening on port 3001!');
 });
