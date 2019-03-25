@@ -7,14 +7,21 @@ const app: express.Application = express();
 const httpServer = new http.Server(app);
 const io = socketio(httpServer);
 
+let boltheadCounter = 3;
+
 app.get('/', function (req, res) {
   res.send('Hello World!');
 });
 
 io.on('connection', function(socket) {
   console.log('a user connected');
+
+  boltheadCounter++;
+  io.emit('updateBoltheadCounter', boltheadCounter);
   socket.on('disconnect', function() {
     console.log('a user disconnected');
+    boltheadCounter--;
+    io.emit('updateBoltheadCounter', boltheadCounter);
   })
 });
 
