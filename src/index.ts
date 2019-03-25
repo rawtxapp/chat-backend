@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import socketio from 'socket.io';
+import Message from './Message';
 
 // Create a new express application instance
 const app: express.Application = express();
@@ -18,11 +19,19 @@ io.on('connection', function(socket) {
 
   boltheadCounter++;
   io.emit('updateBoltheadCounter', boltheadCounter);
+
   socket.on('disconnect', function() {
     console.log('a user disconnected');
+
     boltheadCounter--;
     io.emit('updateBoltheadCounter', boltheadCounter);
-  })
+  });
+
+  socket.on('newMessage', function(msg: Message) {
+    msg.settled = false;
+    // SET INVOICE msg.invoice =
+    io.emit('newMessage', msg);
+  });
 });
 
 httpServer.listen(3001, function () {
