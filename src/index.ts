@@ -8,7 +8,7 @@ const app: express.Application = express();
 const httpServer = new http.Server(app);
 const io = socketio(httpServer);
 
-let boltheadCounter = 3;
+let boltheadCounter = 1;
 let messages: Message[] = [];
 const MAX_MESSAGES = 200; // don't keep more than this many messages in memory.
 
