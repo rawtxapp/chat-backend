@@ -16,7 +16,7 @@ const MESSAGES_FILE = 'messages.json';
 
 fs.readFile(MESSAGES_FILE, 'utf8', function(err, data){
   if(err){
-    console.log('Couldn\'t load messages from disk!');
+    console.log('Couldn\'t load messages from disk!', err);
   } else {
     if (data.length>0){
       messages = JSON.parse(data);
