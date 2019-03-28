@@ -18,6 +18,8 @@ const MESSAGES_FILE = 'messages.json';
 const lndBackend = new RestLnd(process.env.LND_BACKEND_HOST, process.env.LND_BACKEND_PORT);
 lndBackend.setAdminMacaroon(process.env.ADMIN_MACAROON || "");
 
+const SAT_PER_MESSAGE = "10";
+
 const unhealthyLnd = () => {
   console.log('Unhealthy lnd backend.');
   process.exit();
@@ -66,9 +68,16 @@ io.on('connection', function (socket) {
     io.emit('updateBoltheadCounter', boltheadCounter);
   });
 
-  socket.on('newMessage', function (msg: Message) {
+  socket.on('newMessage', async (msg: Message) => {
     msg.settled = false;
     msg.id = messageIdCounter++;
+    const invoice = await lndBackend.addInvoiceSimple(msg.id.toString(),
+      SAT_PER_MESSAGE);
+    if (!invoice.payment_request) {
+      console.log('Failed to get a payment_request, got ', invoice, ' instead');
+      return;
+    }
+    msg.invoice = invoice.payment_request;
     // SET INVOICE msg.invoice =
     messages.push(msg);
     if (messages.length > MAX_MESSAGES) {
