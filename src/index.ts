@@ -11,15 +11,19 @@ const io = socketio(httpServer);
 
 let boltheadCounter = 1;
 let messages: Message[] = [];
+let messageIdCounter = 0;
 const MAX_MESSAGES = 200; // don't keep more than this many messages in memory.
 const MESSAGES_FILE = 'messages.json';
 
-fs.readFile(MESSAGES_FILE, 'utf8', function(err, data){
-  if(err){
+fs.readFile(MESSAGES_FILE, 'utf8', function (err, data) {
+  if (err) {
     console.log('Couldn\'t load messages from disk!', err);
   } else {
-    if (data.length>0){
+    if (data.length > 0) {
       messages = JSON.parse(data);
+      const lastMessageId = messages[messages.length - 1].id || 0;
+      console.log('Loaded messages from file, last message id:', lastMessageId);
+      messageIdCounter = lastMessageId + 1;
     }
   }
 });
@@ -44,8 +48,8 @@ io.on('connection', function (socket) {
   });
 
   socket.on('newMessage', function (msg: Message) {
-    console.log('adding message', msg);
     msg.settled = false;
+    msg.id = messageIdCounter++;
     // SET INVOICE msg.invoice =
     messages.push(msg);
     if (messages.length > MAX_MESSAGES) {
