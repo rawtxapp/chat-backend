@@ -3,6 +3,7 @@ import http from 'http';
 import socketio from 'socket.io';
 import Message from './Message';
 import fs from 'fs';
+import RestLnd from './RestLnd';
 
 // Create a new express application instance
 const app: express.Application = express();
@@ -14,6 +15,21 @@ let messages: Message[] = [];
 let messageIdCounter = 0;
 const MAX_MESSAGES = 200; // don't keep more than this many messages in memory.
 const MESSAGES_FILE = 'messages.json';
+const lndBackend = new RestLnd(process.env.LND_BACKEND_HOST, process.env.LND_BACKEND_PORT);
+lndBackend.setAdminMacaroon(process.env.ADMIN_MACAROON || "");
+
+const unhealthyLnd = () => {
+  console.log('Unhealthy lnd backend.');
+  process.exit();
+};
+
+lndBackend.getInfo().then(a => {
+  if (!a.identity_pubkey) {
+    unhealthyLnd();
+  }
+}).catch(() => {
+  unhealthyLnd();
+});
 
 fs.readFile(MESSAGES_FILE, 'utf8', function (err, data) {
   if (err) {
@@ -21,7 +37,10 @@ fs.readFile(MESSAGES_FILE, 'utf8', function (err, data) {
   } else {
     if (data.length > 0) {
       messages = JSON.parse(data);
-      const lastMessageId = messages[messages.length - 1].id || 0;
+      let lastMessageId = 0;
+      if (messages.length > 1) {
+        lastMessageId = messages[messages.length - 1].id || 0;
+      }
       console.log('Loaded messages from file, last message id:', lastMessageId);
       messageIdCounter = lastMessageId + 1;
     }
