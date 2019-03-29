@@ -20,17 +20,17 @@ lndBackend.setAdminMacaroon(process.env.ADMIN_MACAROON || "");
 
 const SAT_PER_MESSAGE = "10";
 
-const unhealthyLnd = () => {
-  console.log('Unhealthy lnd backend.');
+const unhealthyLnd = (msg = "") => {
+  console.log('Unhealthy lnd backend:', msg, '.');
   process.exit();
 };
 
 lndBackend.getInfo().then(a => {
   if (!a.identity_pubkey) {
-    unhealthyLnd();
+    unhealthyLnd("no identity pubkey");
   }
-}).catch(() => {
-  unhealthyLnd();
+}).catch((err) => {
+  unhealthyLnd(err);
 });
 
 fs.readFile(MESSAGES_FILE, 'utf8', function (err, data) {
