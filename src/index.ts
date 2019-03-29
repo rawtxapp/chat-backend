@@ -20,6 +20,8 @@ lndBackend.setAdminMacaroon(process.env.ADMIN_MACAROON || "");
 
 const SAT_PER_MESSAGE = "10";
 
+let lndAddress = "";
+
 const unhealthyLnd = (msg = "") => {
   console.log('Unhealthy lnd backend:', msg, '.');
   process.exit();
@@ -28,6 +30,8 @@ const unhealthyLnd = (msg = "") => {
 lndBackend.getInfo().then(a => {
   if (!a.identity_pubkey) {
     unhealthyLnd("no identity pubkey");
+  } else {
+    lndAddress = a.uris[0];
   }
 }).catch((err) => {
   unhealthyLnd(err);
@@ -58,6 +62,7 @@ io.on('connection', function (socket) {
 
   boltheadCounter++;
   io.emit('updateBoltheadCounter', boltheadCounter);
+  io.emit('nodeAddress', lndAddress);
 
   socket.emit('initialMessages', messages);
 
