@@ -4,6 +4,7 @@ import socketio from 'socket.io';
 import Message from './Message';
 import fs from 'fs';
 import RestLnd from './RestLnd';
+import MessageDB from './MessageDB';
 
 // Create a new express application instance
 const app: express.Application = express();
@@ -11,12 +12,10 @@ const httpServer = new http.Server(app);
 const io = socketio(httpServer);
 
 let boltheadCounter = 1;
-let messages: Message[] = [];
-let messageIdCounter = 0;
 const MAX_MESSAGES = 200; // don't keep more than this many messages in memory.
-const MESSAGES_FILE = 'messages.json';
 const lndBackend = new RestLnd(process.env.LND_BACKEND_HOST, process.env.LND_BACKEND_PORT);
 lndBackend.setAdminMacaroon(process.env.ADMIN_MACAROON || "");
+const messageBackend = new MessageDB();
 
 const SAT_PER_MESSAGE = "10";
 
@@ -37,21 +36,6 @@ lndBackend.getInfo().then(a => {
   unhealthyLnd(err);
 });
 
-fs.readFile(MESSAGES_FILE, 'utf8', function (err, data) {
-  if (err) {
-    console.log('Couldn\'t load messages from disk!', err);
-  } else {
-    if (data.length > 0) {
-      messages = JSON.parse(data);
-      let lastMessageId = 0;
-      if (messages.length > 1) {
-        lastMessageId = messages[messages.length - 1].id || 0;
-      }
-      console.log('Loaded messages from file, last message id:', lastMessageId);
-      messageIdCounter = lastMessageId + 1;
-    }
-  }
-});
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
@@ -64,7 +48,9 @@ io.on('connection', function (socket) {
   io.emit('updateBoltheadCounter', boltheadCounter);
   io.emit('nodeAddress', lndAddress);
 
-  socket.emit('initialMessages', messages);
+  messageBackend.getLastNMessages(MAX_MESSAGES, (msgs: Message[]) => {
+    socket.emit('initialMessages', msgs);
+  });
 
   socket.on('disconnect', function () {
     console.log('a user disconnected');
@@ -75,7 +61,6 @@ io.on('connection', function (socket) {
 
   socket.on('newMessage', async (msg: Message) => {
     msg.settled = false;
-    msg.id = messageIdCounter++;
     const invoice = await lndBackend.addInvoiceSimple(msg.id.toString(),
       SAT_PER_MESSAGE);
     if (!invoice.payment_request) {
@@ -83,25 +68,12 @@ io.on('connection', function (socket) {
       return;
     }
     msg.invoice = invoice.payment_request;
-    messages.push(msg);
-    if (messages.length > MAX_MESSAGES) {
-      // inefficient and ugly.
-      messages.shift();
-    }
+    // messages.push(msg);
+    messageBackend.addNewMessage(msg);
     io.emit('newMessage', msg);
   });
 });
 
 httpServer.listen(3001, function () {
   console.log('Listening on port 3001!');
-});
-
-process.on('SIGINT', function () {
-  process.exit();
-});
-
-process.on('exit', function () {
-  console.log('');
-  console.log("Exiting: saving in-memory messages to disk!");
-  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages));
 });
