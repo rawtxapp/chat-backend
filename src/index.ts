@@ -83,7 +83,6 @@ io.on('connection', function (socket) {
       return;
     }
     msg.invoice = invoice.payment_request;
-    // SET INVOICE msg.invoice =
     messages.push(msg);
     if (messages.length > MAX_MESSAGES) {
       // inefficient and ugly.
