@@ -31,6 +31,13 @@ lndBackend.getInfo().then(a => {
     unhealthyLnd("no identity pubkey");
   } else {
     lndAddress = a.uris[0];
+    lndBackend.subInvoices((i: any) => {
+      if (i.result.settled) {
+        messageBackend.settleMessageWithInvoice(i.result.payment_request, (id: number) => {
+          io.emit('settled', id);
+        });
+      }
+    });
   }
 }).catch((err) => {
   unhealthyLnd(err);
@@ -61,7 +68,7 @@ io.on('connection', function (socket) {
 
   socket.on('newMessage', async (msg: Message) => {
     msg.settled = false;
-    const invoice = await lndBackend.addInvoiceSimple(msg.id.toString(),
+    const invoice = await lndBackend.addInvoiceSimple(msg.message.substr(0, 20),
       SAT_PER_MESSAGE);
     if (!invoice.payment_request) {
       console.log('Failed to get a payment_request, got ', invoice, ' instead');

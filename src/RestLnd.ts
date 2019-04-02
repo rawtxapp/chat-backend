@@ -3,29 +3,30 @@
  */
 
 import fetch from "node-fetch";
+import https from 'https';
 
-const encodeBase64 = (s : string) => {
+const encodeBase64 = (s: string) => {
     return Buffer.from(s).toString('base64');
 }
 
-export const timeout = function(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export const timeout = function (ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 };
 
 export const convertErrorToStr = (err: any): string => {
-  if (typeof err == "string") {
-    return err;
-  } else if (
-    typeof err == "object" &&
-    err.message &&
-    typeof err.message == "string"
-  ) {
-    return err.message;
-  } else if (typeof err == "object") {
-    return JSON.stringify(err);
-  } else {
-    return String(err);
-  }
+    if (typeof err == "string") {
+        return err;
+    } else if (
+        typeof err == "object" &&
+        err.message &&
+        typeof err.message == "string"
+    ) {
+        return err.message;
+    } else if (typeof err == "object") {
+        return JSON.stringify(err);
+    } else {
+        return String(err);
+    }
 };
 
 type LNDState = "seed" | "password" | "unlocked" | "unknown";
@@ -207,7 +208,7 @@ class LndApi {
                 // Sometimes getNodeInfo doesn't include the peer, so check peer list to
                 // overcome that.
                 const peerIncludes = (await this.peers())["peers"]
-                    .map((a:any) => a.pub_key)
+                    .map((a: any) => a.pub_key)
                     .includes(pubkey);
                 if (peerIncludes) return {};
                 const { node } = await this.getNodeInfo(pubkey);
@@ -353,6 +354,15 @@ class LndApi {
 
         return "unknown";
     };
+
+    subInvoices = (fn: Function) => {
+        https.get(this.url("invoices/subscribe"),
+            { headers: this.headers() }, function (res) {
+                res.on('data', function (chunk) {
+                    fn(JSON.parse(chunk.toString()));
+                })
+            })
+    }
 }
 
 export default LndApi;

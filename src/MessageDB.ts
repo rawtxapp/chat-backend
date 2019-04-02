@@ -31,9 +31,31 @@ export default class MessageDB {
         this.client.set('message' + message.id.toString(),
             JSON.stringify(message));
 
+        // Keep a mapping between invoice to msg id.
+        this.client.set(message.invoice, message.id.toString());
+
         this.client.incr('messageIdCounter', (err, c) => {
             this.messageIdCounter = c;
         });
+    }
+
+    settleMessageWithInvoice = (invoice: string,fnMsgId:Function) => {
+        this.client.get(invoice, (err, id) => {
+            if(err) {
+                console.error('Couldn\'t get id for invoice',invoice);
+            }else{
+                this.client.get('message'+id, (err, message) => {
+                    if(err){
+                        console.log("couldn't settle invoice",invoice, err);
+                    }else{
+                        let msgJson = JSON.parse(message);
+                        msgJson.settled = true;
+                        this.client.set('message'+id, JSON.stringify(msgJson));
+                        fnMsgId(id);
+                    }
+                })
+            }
+        })
     }
 
     getLastNMessages = (nMessages: number, fn: Function) => {
