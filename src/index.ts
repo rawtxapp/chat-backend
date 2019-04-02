@@ -35,6 +35,8 @@ lndBackend.getInfo().then(a => {
       if (i.result.settled) {
         messageBackend.settleMessageWithInvoice(i.result.payment_request, (id: number) => {
           io.emit('settled', id);
+        }, (sat: number) => {
+          io.emit('satoshiCounter', sat * 10);
         });
       }
     });
@@ -53,6 +55,7 @@ io.on('connection', function (socket) {
 
   boltheadCounter++;
   io.emit('updateBoltheadCounter', boltheadCounter);
+  io.emit('satoshiCounter', messageBackend.satoshiCounter * 10);
   io.emit('nodeAddress', lndAddress);
 
   messageBackend.getLastNMessages(MAX_MESSAGES, (msgs: Message[]) => {
