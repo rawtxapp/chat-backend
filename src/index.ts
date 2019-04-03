@@ -84,6 +84,6 @@ io.on('connection', function (socket) {
   });
 });
 
-httpServer.listen(3001, function () {
-  console.log('Listening on port 3001!');
+httpServer.listen(process.env.CHAT_BACKEND_PORT, function () {
+  console.log('Listening on port ',process.env.CHAT_BACKEND_PORT||3001);
 });
